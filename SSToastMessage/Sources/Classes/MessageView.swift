@@ -57,7 +57,7 @@ public struct MessageView<MessageContent>: ViewModifier where MessageContent: Vi
     var view: () -> MessageContent
     
     /// holder for autohiding dispatch work (to be able to cancel it when needed)
-    var dispatchWorkHolder = DispatchWorkHolder()
+    @State private var dispatchWorkHolder = DispatchWorkHolder()
     
     // MARK: - Private Properties
     
