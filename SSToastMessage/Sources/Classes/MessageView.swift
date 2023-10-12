@@ -57,7 +57,7 @@ public struct MessageView<MessageContent>: ViewModifier where MessageContent: Vi
     var view: () -> MessageContent
     
     /// holder for autohiding dispatch work (to be able to cancel it when needed)
-    @State private var dispatchWorkHolder = DispatchWorkHolder()
+    @State private var work: DispatchWorkItem?
     
     // MARK: - Private Properties
     
@@ -152,19 +152,7 @@ public struct MessageView<MessageContent>: ViewModifier where MessageContent: Vi
     
     /// This is the builder for the sheet content
     func presentSheet() -> some View {
-        
-        // if needed, dispatch autohide and cancel previous one
-        if let autohideDuration = autohideDuration {
-            dispatchWorkHolder.work?.cancel()
-            dispatchWorkHolder.work = DispatchWorkItem(block: {
-                self.isPresented = false
-            })
-            if isPresented, let work = dispatchWorkHolder.work {
-                DispatchQueue.main.asyncAfter(deadline: .now() + autohideDuration, execute: work)
-            }
-        }
-        
-        return ZStack {
+        ZStack {
             Group {
                 VStack {
                     VStack {
@@ -186,7 +174,7 @@ public struct MessageView<MessageContent>: ViewModifier where MessageContent: Vi
                                     }
                                     return AnyView(EmptyView())
                                 }
-                        )
+                            )
                     }
                 }
                 .frame(width: screenWidth)
@@ -194,6 +182,15 @@ public struct MessageView<MessageContent>: ViewModifier where MessageContent: Vi
                 .animation(animation)
             }
         }
+        .onChange(of: isPresented, perform: { value in
+            if let autohideDuration = autohideDuration, value {
+                work?.cancel()
+                work = DispatchWorkItem(block: {
+                    self.isPresented = false
+                })
+                DispatchQueue.main.asyncAfter(deadline: .now() + autohideDuration, execute: work!)
+            }
+        })
     }
 }
 
